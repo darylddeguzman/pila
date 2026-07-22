@@ -7,12 +7,12 @@ from flask import Flask, render_template_string, Response, request, jsonify, ses
 
 app = Flask(__name__)
 
-ADMIN_PASSWORD = "SECRET"
+ADMIN_PASSWORD = "PASSWORD"
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key-12345")
 
 queue_state = {
     "current_called": 0,
-    "last_ticket_issued": 0, # Taga-tanda ng huling numerong ibinigay sa customer
+    "last_number": 0,
     "last_reset_date": ""
 }
 
@@ -24,7 +24,7 @@ def check_and_reset_queue():
         return
     if current_date_ph != queue_state["last_reset_date"]:
         queue_state["current_called"] = 0
-        queue_state["last_ticket_issued"] = 0 # Kasamang magre-reset sa 0 tuwing hatinggabi
+        queue_state["last_number"] = 0
         queue_state["last_reset_date"] = current_date_ph
 
 ADMIN_TEMPLATE = """
@@ -40,13 +40,14 @@ ADMIN_TEMPLATE = """
         .btn-back { font-size: 18px; padding: 12px; background: #f39c12; color: white; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         .reset { background: #ff4a4a; margin-top: 30px; font-size: 14px; padding: 8px; border: none; border-radius: 5px; color: white; cursor: pointer; }
         .logout { display: block; margin-top: 15px; color: #bbb; text-decoration: none; font-size: 14px; }
+        .info { font-size: 16px; color: #aaa; margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <div class="box">
         <h1>ADMIN PANEL</h1>
-        <h2>Now Serving: <span id="current">{{ current_called }}</span></h2>
-        <h2>Total Issued Tickets: <span id="issued">{{ last_ticket_issued }}</span></h2>
+        <div class="info">Total Tickets: <span id="total_tickets">0</span></div>
+        <h2>Now Serving: <span id="current">0</span></h2>
         <button class="btn-main" onclick="nextQueue()">NEXT CUSTOMER</button>
         <button class="btn-back" onclick="backQueue()">BACK</button>
         <br>
@@ -54,13 +55,17 @@ ADMIN_TEMPLATE = """
         <a class="logout" href="/admin/logout">Logout</a>
     </div>
     <script>
-        function nextQueue() { fetch('/next-turn', { method: 'POST' }).then(res => res.json()).then(data => { updateScreen(data); }); }
-        function backQueue() { fetch('/back-turn', { method: 'POST' }).then(res => res.json()).then(data => { updateScreen(data); }); }
-        function manualReset() { if(confirm("Ibalik sa 0 ang pila?")) { fetch('/manual-reset', { method: 'POST' }).then(res => res.json()).then(data => { updateScreen(data); }); } }
-        function updateScreen(data) {
-            document.getElementById("current").innerText = data.current_called;
-            document.getElementById("issued").innerText = data.last_ticket_issued;
+        function updateAdminDisplay() {
+            fetch('/get-data').then(res => res.json()).then(data => {
+                document.getElementById("current").innerText = data.current_called;
+                document.getElementById("total_tickets").innerText = data.last_number;
+            });
         }
+        function nextQueue() { fetch('/next-turn', { method: 'POST' }).then(res => res.json()).then(data => { document.getElementById("current").innerText = data.current_called; }); }
+        function backQueue() { fetch('/back-turn', { method: 'POST' }).then(res => res.json()).then(data => { document.getElementById("current").innerText = data.current_called; }); }
+        function manualReset() { if(confirm("Ibalik sa 0 ang pila?")) { fetch('/manual-reset', { method: 'POST' }).then(res => res.json()).then(data => { document.getElementById("current").innerText = data.current_called; }); } }
+        updateAdminDisplay();
+        setInterval(updateAdminDisplay, 1000);
     </script>
 </body>
 </html>
@@ -100,81 +105,99 @@ CUSTOMER_TEMPLATE = """
     <title>Status ng Pila</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 40px; background: #11111a; color: #fff; }
-        .box { border: 2px solid #2980b9; padding: 30px; display: inline-block; border-radius: 12px; background: #1c1c28; width: 85%; max-width: 400px; }
+        body { font-family: sans-serif; text-align: center; margin-top: 30px; background: #11111a; color: #fff; }
+        .box { border: 2px solid #2980b9; padding: 35px; display: inline-block; border-radius: 12px; background: #1c1c28; width: 85%; max-width: 400px; }
         .num { font-size: 80px; color: #3498db; font-weight: bold; margin: 15px 0; }
-        .ticket-box { background: #2c2c3e; border: 2px dashed #3498db; padding: 15px; border-radius: 8px; margin-top: 20px; }
-        .ticket-num { font-size: 40px; color: #00ca72; font-weight: bold; }
-        .btn-get { font-size: 18px; padding: 12px; background: #00ca72; color: white; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 15px; }
+        .btn-ticket { font-size: 20px; padding: 15px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 20px; }
+        .ticket-box { background: #222230; padding: 15px; border-radius: 8px; border: 1px dashed #3498db; margin-bottom: 20px; }
+        .my-num { font-size: 40px; color: #00ca72; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h1>NOW SERVING</h1>
-        <div class="num" id="current_display">0</div>
+        <button class="btn-ticket" onclick="getTicket()">KUMUHA NG TICKET NUMBER</button>
+        <div class="ticket-box" id="your_ticket_section" style="display:none;">
+            <div>Ang Iyong Numero:</div>
+            <div class="my-num" id="my_ticket_display">0</div>
+        </div>
         <hr style="border:1px solid #333">
-        
-        <div id="get_ticket_section">
-            <button class="btn-get" onclick="getTicket()">KUMUHA NG TICKET NUMBER</button>
-        </div>
-
-        <div class="ticket-box" id="my_ticket_section" style="display: none;">
-            <p style="margin: 0; color: #aaa;">ANG IYONG TICKET NUMBER:</p>
-            <div class="ticket-num" id="my_ticket_display">0</div>
-            <p style="font-size:12px; color:#888; margin: 5px 0 0 0;">Mag-o-automatic alert ang phone mo kapag turn mo na.</p>
-        </div>
+        <h3>NOW SERVING</h3>
+        <div class="num" id="current_display">0</div>
+        <p style="font-size:12px; color:#888;">Mag-o-automatic beep at alert kapag turn mo na.</p>
     </div>
     <script>
-        // Tinitingnan kung may nakaimbak nang ticket sa browser memory ng customer phone
-        let myTicket = localStorage.getItem("user_ticket") ? parseInt(localStorage.getItem("user_ticket")) : null;
-        
-        if (myTicket) {
-            showTicket(myTicket);
+        let hasAlerted = false;
+        let lastLoggedNumber = 0;
+        let userTicket = 0;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         }
 
         function getTicket() {
-            fetch('/get-ticket-number', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                myTicket = data.ticket_number;
-                localStorage.setItem("user_ticket", myTicket); // Ise-save sa phone para kahit i-refresh ang page, hindi mawawala
-                showTicket(myTicket);
+            initAudio();
+            fetch('/get-ticket', { method: 'POST' }).then(res => res.json()).then(data => {
+                userTicket = data.your_ticket;
+                document.getElementById("my_ticket_display").innerText = userTicket;
+                document.getElementById("your_ticket_section").style.display = "block";
+                hasAlerted = false;
             });
         }
 
-        function showTicket(num) {
-            document.getElementById("get_ticket_section").style.display = "none";
-            document.getElementById("my_ticket_section").style.display = "block";
-            document.getElementById("my_ticket_display").innerText = num;
+        function playBeep() {
+            try {
+                initAudio();
+                let osc = audioCtx.createOscillator();
+                osc.type = "sine"; 
+                osc.connect(audioCtx.destination); 
+                osc.start();
+                setTimeout(() => osc.stop(), 600);
+            } catch(e) { console.log(e); }
         }
 
-        const eventSource = new EventSource("/stream-pila");
-        eventSource.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            const currentCalled = data.current_called;
-            document.getElementById("current_display").innerText = currentCalled;
-            
-            // Kung ang kasalukuyang tinatawag ay tugma sa kusang binigay na ticket sa kanya:
-            if (myTicket && myTicket === currentCalled && currentCalled !== 0) {
-                let context = new (window.AudioContext || window.webkitAudioContext)();
-                let osc = context.createOscillator();
-                osc.type = "sine"; osc.connect(context.destination); osc.start();
-                setTimeout(() => osc.stop(), 600);
-                alert("IKAW NA ANG SUSUNOD! Pumunta na sa counter para sa Ticket #" + myTicket);
+        function checkQueueUpdate() {
+            fetch('/get-data').then(res => res.json()).then(data => {
+                const currentCalled = data.current_called;
+                document.getElementById("current_display").innerText = currentCalled;
                 
-                // Kapag tapos na siya, buburahin ang ticket sa phone para pwede siya kumuha ulit sa susunod na araw
-                localStorage.removeItem("user_ticket");
-                myTicket = null;
-                setTimeout(() => {
-                    document.getElementById("get_ticket_section").style.display = "block";
-                    document.getElementById("my_ticket_section").style.display = "none";
-                }, 5000);
-            }
-        };
+                if (currentCalled !== lastLoggedNumber) {
+                    hasAlerted = false;
+                    lastLoggedNumber = currentCalled;
+                }
+
+                if (userTicket === currentCalled && currentCalled !== 0 && !hasAlerted) {
+                    hasAlerted = true;
+                    playBeep();
+                    setTimeout(() => {
+                        alert("IKAW NA ANG SUSUNOD! Ticket #" + userTicket);
+                    }, 100);
+                }
+            });
+        }
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('touchstart', initAudio, { once: true });
+        setInterval(checkQueueUpdate, 1000);
     </script>
 </body>
 </html>
 """
+
+@app.route('/get-data', methods=['GET'])
+def get_data():
+    check_and_reset_queue()
+    return jsonify(queue_state)
+
+@app.route('/get-ticket', methods=['POST'])
+def get_ticket():
+    check_and_reset_queue()
+    queue_state["last_number"] += 1
+    return jsonify({"your_ticket": queue_state["last_number"]})
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -194,22 +217,18 @@ def admin_logout():
 def admin_page():
     if not session.get('logged_in'): return redirect(url_for('admin_login'))
     check_and_reset_queue()
-    return render_template_string(ADMIN_TEMPLATE, current_called=queue_state["current_called"], last_ticket_issued=queue_state["last_ticket_issued"])
+    return render_template_string(ADMIN_TEMPLATE)
 
 @app.route('/pila')
 def customer_page():
     return render_template_string(CUSTOMER_TEMPLATE)
 
-# BAGONG ENDPOINT: Kusang nagbibigay ng susunod na numero sa customer
-@app.route('/get-ticket-number', methods=['POST'])
-def get_ticket_number():
-    check_and_reset_queue()
-    queue_state["last_ticket_issued"] += 1
-    return jsonify({"ticket_number": queue_state["last_ticket_issued"]})
-
 @app.route('/next-turn', methods=['POST'])
 def next_turn():
     if not session.get('logged_in'): return jsonify({"error": "Unauthorized"}), 401
     check_and_reset_queue()
-    queue_state["current_called"] += 1
+    if queue_state["current_called"] < queue_state["last_number"]:
+        queue_state["current_called"] += 1
+    return jsonify(queue_state)
+
 
