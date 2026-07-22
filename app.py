@@ -54,7 +54,6 @@ ADMIN_TEMPLATE = """
         .serving-name { font-size: 20px; color: #00ca72; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .queue-list { background: #11111a; padding: 15px; border-radius: 8px; max-height: 150px; overflow-y: auto; font-size: 14px; border: 1px solid #3a3a4a; }
         .queue-item { padding: 5px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
-        .queue-item.active { color: #00ca72; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -84,8 +83,8 @@ ADMIN_TEMPLATE = """
                 document.getElementById("total_tickets").innerText = data.last_number;
                 
                 let currentNum = data.current_called;
-                if (currentNum > 0 && data.tickets[currentNum]) {
-                    document.getElementById("serving_name_display").innerText = "Name: " + data.tickets[currentNum];
+                if (currentNum > 0 && data.tickets[String(currentNum)]) {
+                    document.getElementById("serving_name_display").innerText = "Name: " + data.tickets[String(currentNum)];
                 } else {
                     document.getElementById("serving_name_display").innerText = "Name: ---";
                 }
@@ -94,7 +93,7 @@ ADMIN_TEMPLATE = """
                 let startNum = currentNum + 1;
                 if (currentNum === 0) startNum = 1;
                 for (let i = startNum; i <= data.last_number; i++) {
-                    let name = data.tickets[i] || "Anonymous";
+                    let name = data.tickets[String(i)] || "Anonymous";
                     listHtml += `<div class="queue-item"><span>Ticket #${i}</span><span>${name}</span></div>`;
                 }
                 document.getElementById("queue_list_container").innerHTML = listHtml || "<div style='color:#666;'>No one in queue.</div>";
@@ -186,5 +185,3 @@ CUSTOMER_TEMPLATE = """
     </style>
 </head>
 <body>
-
-
