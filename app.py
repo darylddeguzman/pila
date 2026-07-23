@@ -1,7 +1,7 @@
+from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
 import json
 import time
 import os
-from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
 
