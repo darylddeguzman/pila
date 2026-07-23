@@ -175,4 +175,4 @@ CUSTOMER_TEMPLATE = """
 </head>
 <body>
     <div class="box">
-        <div id="registration_section">
+        div id="registration_section"
