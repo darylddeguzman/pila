@@ -1,7 +1,6 @@
 import json
 import time
 import os
-import datetime
 from flask import Flask, render_template_string, Response, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
@@ -19,21 +18,18 @@ queue_state = {
 }
 
 def check_and_reset_queue():
-    # Awtomatikong kinukuha ang Oras sa Pilipinas (UTC + 8 Hours) nang walang panlabas na library
-    utc_now = datetime.datetime.utcnow()
-    ph_now = utc_now + datetime.timedelta(hours=8)
-    current_date_ph = ph_now.date().isoformat()
-    
+    # Gumagamit ng simpleng time counter para sa 24 hours para hindi na kailangan ng panlabas na timezone apps
+    current_day = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 28800))
     if not queue_state["last_reset_date"]:
-        queue_state["last_reset_date"] = current_date_ph
+        queue_state["last_reset_date"] = current_day
         return
-    if current_date_ph != queue_state["last_reset_date"]:
+    if current_day != queue_state["last_reset_date"]:
         queue_state["current_called"] = 0
         queue_state["last_number"] = 0
         queue_state["called_time"] = 0
         queue_state["custom_message"] = ""
         queue_state["tickets"] = {}
-        queue_state["last_reset_date"] = current_date_ph
+        queue_state["last_reset_date"] = current_day
 
 ADMIN_TEMPLATE = """
 <!DOCTYPE html>
@@ -183,3 +179,8 @@ CUSTOMER_TEMPLATE = """
         .input-name { font-size: 18px; padding: 12px; width: 90%; border-radius: 8px; border: 2px solid #444; background: #2c2c3e; color: white; text-align: center; margin-bottom: 15px; }
         .ticket-box { background: #222230; padding: 15px; border-radius: 8px; border: 1px dashed #3498db; margin-bottom: 20px; }
         .my-num { font-size: 40px; color: #00ca72; font-weight: bold; }
+        .msg-box { background: #e74c3c; color: white; padding: 10px; border-radius: 5px; font-weight: bold; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
