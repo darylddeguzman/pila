@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Status ng Pila</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 30px; background: #11111a; color: #fff; }
+        .box { border: 2px solid #2980b9; padding: 35px; display: inline-block; border-radius: 12px; background: #1c1c28; width: 85%; max-width: 400px; }
+        .num { font-size: 80px; color: #3498db; font-weight: bold; margin: 15px 0; }
+        .btn-ticket { font-size: 20px; padding: 15px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 20px; }
+        .input-name { font-size: 18px; padding: 12px; width: 90%; border-radius: 8px; border: 2px solid #444; background: #2c2c3e; color: white; text-align: center; margin-bottom: 15px; }
+        .ticket-box { background: #222230; padding: 15px; border-radius: 8px; border: 1px dashed #3498db; margin-bottom: 20px; }
+        .my-num { font-size: 40px; color: #00ca72; font-weight: bold; }
+        .msg-box { background: #e74c3c; color: white; padding: 10px; border-radius: 5px; font-weight: bold; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div id="registration_section">
+            <input type="text" id="customer_name" class="input-name" placeholder="Ilagay ang Iyong Pangalan" maxlength="30">
+            <button class="btn-ticket" onclick="getTicket()">KUMUHA NG TICKET NUMBER</button>
+        </div>
+        <div class="ticket-box" id="your_ticket_section" style="display:none;">
+            <div>Ang Iyong Numero:</div>
+            <div class="my-num" id="my_ticket_display">0</div>
+        </div>
+        <hr style="border:1px solid #333">
+        <h3>NOW SERVING</h3>
+        <div class="num" id="current_display">0</div>
+        <p id="main_msg_p">Mag-o-automatic beep at alert kapag turn mo na.</p>
+        <div class="msg-box" id="custom_msg_box"></div>
+    </div>
+    <script>
+        let hasAlerted = false;
+        let lastLoggedNumber = 0;
+        let userTicket = 0;
+        let audioCtx = null;
+        let lastCustomMsg = "";
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        function getTicket() {
+            let nameInput = document.getElementById("customer_name").value.trim();
+            if (!nameInput) {
+                alert("Mangyaring ilagay ang iyong pangalan bago kumuha ng ticket.");
+                return;
+            }
+            initAudio();
+            fetch('/get-ticket', { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: nameInput})
+            }).then(res => res.json()).then(data => {
+                userTicket = data.your_ticket;
+                document.getElementById("my_ticket_display").innerText = userTicket;
+                document.getElementById("your_ticket_section").style.display = "block";
+                document.getElementById("registration_section").style.display = "none";
+                hasAlerted = false;
+            });
+        }
+        function playBeep() {
+            try {
+                initAudio();
+                let osc = audioCtx.createOscillator();
+                osc.type = "sine"; osc.connect(audioCtx.destination); osc.start();
+                setTimeout(() => osc.stop(), 600);
+            } catch(e) { console.log(e); }
+        }
+        function checkQueueUpdate() {
+            fetch('/get-data').then(res => res.json()).then(data => {
+                const currentCalled = data.current_called;
+                document.getElementById("current_display").innerText = currentCalled;
+                if (currentCalled !== lastLoggedNumber) {
+                    hasAlerted = false;
+                    lastLoggedNumber = currentCalled;
+                }
+                if (data.custom_message) {
+                    document.getElementById("custom_msg_box").innerText = data.custom_message;
+                    document.getElementById("custom_msg_box").style.display = "block";
+                    if (userTicket === currentCalled && data.custom_message !== lastCustomMsg) {
+                        playBeep();
+                        lastCustomMsg = data.custom_message;
+                        alert("MESSAGE MULA SA COUNTER: " + data.custom_message);
+                    }
+                } else {
+                    document.getElementById("custom_msg_box").style.display = "none";
+                }
+                if (userTicket === currentCalled && currentCalled !== 0 && !hasAlerted) {
+                    hasAlerted = true;
+                    playBeep();
+                    setTimeout(() => { alert("IKAW NA ANG SUSUNOD! Ticket #" + userTicket); }, 100);
+                }
+            });
+        }
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('touchstart', initAudio, { once: true });
+        setInterval(checkQueueUpdate, 1000);
+    </script>
+</body>
+</html>
