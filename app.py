@@ -60,14 +60,11 @@ ADMIN_TEMPLATE = """
         <h2>Now Serving: <span id="current">0</span></h2>
         <div class="serving-name" id="serving_name_display">Name: ---</div>
         <div class="timer" id="timer_display">Time Remaining: 02:00</div>
-        
         <button class="btn-main" id="next_btn" onclick="nextQueue()">NEXT CUSTOMER</button>
         <button class="btn-back" onclick="backQueue()">BACK</button>
         <button class="btn-msg" onclick="sendMsg()">SEND FOLLOW-UP MESSAGE</button>
-        
         <h3>Upcoming Queue:</h3>
         <div class="queue-list" id="queue_list_container"></div>
-
         <div class="reset-container">
             <button class="reset" onclick="manualReset()">Manual Reset to 0</button>
             <a class="logout" href="/admin/logout">Logout</a>
@@ -78,33 +75,28 @@ ADMIN_TEMPLATE = """
             fetch('/get-data').then(res => res.json()).then(data => {
                 document.getElementById("current").innerText = data.current_called;
                 document.getElementById("total_tickets").innerText = data.last_number;
-                
                 let currentNum = data.current_called;
                 if (currentNum > 0 && data.tickets[String(currentNum)]) {
                     document.getElementById("serving_name_display").innerText = "Name: " + data.tickets[String(currentNum)];
                 } else {
                     document.getElementById("serving_name_display").innerText = "Name: ---";
                 }
-
                 let listHtml = "";
                 let startNum = currentNum + 1;
                 if (currentNum === 0) startNum = 1;
                 for (let i = startNum; i <= data.last_number; i++) {
                     let name = data.tickets[String(i)] || "Anonymous";
-                    listHtml += `<div class="queue-item"><span>Ticket #${i}</span><span>${name}</span></div>`;
+                    listHtml += '<div class="queue-item"><span>Ticket #' + i + '</span><span>' + name + '</span></div>';
                 }
                 document.getElementById("queue_list_container").innerHTML = listHtml || "<div style='color:#666;'>No one in queue.</div>";
-                
                 if (currentNum === 0) {
                     document.getElementById("timer_display").innerText = "Time Remaining: 02:00";
                     document.getElementById("next_btn").disabled = false;
                     return;
                 }
-                
                 let now = Math.floor(Date.now() / 1000);
                 let elapsed = now - data.called_time;
                 let remaining = 120 - elapsed;
-                
                 if (remaining > 0) {
                     let mins = Math.floor(remaining / 60);
                     let secs = remaining % 60;
