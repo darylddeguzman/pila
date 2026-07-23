@@ -86,7 +86,7 @@ ADMIN_TEMPLATE = """
                 if (currentNum === 0) startNum = 1;
                 for (let i = startNum; i <= data.last_number; i++) {
                     let name = data.tickets[String(i)] || "Anonymous";
-                    listHtml += `<div class="queue-item"><span>Ticket #${i}</span><span>${name}</span></div>`;
+                    listHtml += '<div class="queue-item"><span>Ticket #' + i + '</span><span>' + name + '</span></div>';
                 }
                 document.getElementById("queue_list_container").innerHTML = listHtml || "<div style='color:#666;'>No one in queue.</div>";
                 if (currentNum === 0) {
@@ -156,7 +156,7 @@ LOGIN_TEMPLATE = """
 </html>
 """
 
-CUSTOMER_TEMPLATE = '''
+CUSTOMER_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -176,4 +176,3 @@ CUSTOMER_TEMPLATE = '''
 <body>
     <div class="box">
         <div id="registration_section">
-            <input type="text" id="customer_name" class="input-name" placeholder="Ilagay ang Iyong Pangalan" maxlength="30">
