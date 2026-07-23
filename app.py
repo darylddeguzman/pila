@@ -1,7 +1,7 @@
 import json
 import time
 import os
-from flask import Flask, render_template_string, Response, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
 
@@ -86,7 +86,7 @@ ADMIN_TEMPLATE = """
                 if (currentNum === 0) startNum = 1;
                 for (let i = startNum; i <= data.last_number; i++) {
                     let name = data.tickets[String(i)] || "Anonymous";
-                    listHtml += '<div class="queue-item"><span>Ticket #' + i + '</span><span>' + name + '</span></div>';
+                    listHtml += `<div class="queue-item"><span>Ticket #${i}</span><span>${name}</span></div>`;
                 }
                 document.getElementById("queue_list_container").innerHTML = listHtml || "<div style='color:#666;'>No one in queue.</div>";
                 if (currentNum === 0) {
@@ -156,7 +156,7 @@ LOGIN_TEMPLATE = """
 </html>
 """
 
-CUSTOMER_TEMPLATE = """
+CUSTOMER_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
 <head>
