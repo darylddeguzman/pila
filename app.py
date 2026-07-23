@@ -18,7 +18,6 @@ queue_state = {
 }
 
 def check_and_reset_queue():
-    # Gumagamit ng simpleng time counter para sa 24 hours para hindi na kailangan ng panlabas na timezone apps
     current_day = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 28800))
     if not queue_state["last_reset_date"]:
         queue_state["last_reset_date"] = current_day
@@ -184,3 +183,4 @@ CUSTOMER_TEMPLATE = """
 </head>
 <body>
     <div class="box">
+        <div id="registration_section">
