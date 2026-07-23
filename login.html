@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 100px; background: #1a1a24; color: #fff; }
+        .box { border: 2px solid #3a3a4a; padding: 30px; display: inline-block; border-radius: 12px; background: #222230; width: 85%; max-width: 350px; }
+        input[type="password"] { font-size: 18px; padding: 10px; width: 90%; border-radius: 5px; border: 1px solid #444; background: #111; color: white; margin-bottom: 15px; text-align: center; }
+        button { font-size: 18px; padding: 10px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; width: 96%; font-weight: bold; }
+        .error { color: #ff4a4a; font-size: 14px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>ADMIN LOGIN</h2>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <form method="POST" action="/admin/login">
+            <input type="password" name="password" placeholder="Password" required autofocus><br>
+            <button type="submit">LOGIN</button>
+        </form>
+    </div>
+</body>
+</html>
