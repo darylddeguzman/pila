@@ -176,3 +176,4 @@ CUSTOMER_TEMPLATE = """
 <body>
     <div class="box">
         <div id="registration_section">
+            <input type="text" id="customer_name" class="input-name" placeholder="Ilagay ang Iyong Pangalan" maxlength="30">
