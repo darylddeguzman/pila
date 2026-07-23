@@ -1,8 +1,7 @@
 import json
 import time
 import os
-from datetime import datetime
-import pytz
+import datetime
 from flask import Flask, render_template_string, Response, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
@@ -20,8 +19,11 @@ queue_state = {
 }
 
 def check_and_reset_queue():
-    tz_ph = pytz.timezone('Asia/Manila')
-    current_date_ph = datetime.now(tz_ph).date().isoformat()
+    # Awtomatikong kinukuha ang Oras sa Pilipinas (UTC + 8 Hours) nang walang panlabas na library
+    utc_now = datetime.datetime.utcnow()
+    ph_now = utc_now + datetime.timedelta(hours=8)
+    current_date_ph = ph_now.date().isoformat()
+    
     if not queue_state["last_reset_date"]:
         queue_state["last_reset_date"] = current_date_ph
         return
@@ -181,7 +183,3 @@ CUSTOMER_TEMPLATE = """
         .input-name { font-size: 18px; padding: 12px; width: 90%; border-radius: 8px; border: 2px solid #444; background: #2c2c3e; color: white; text-align: center; margin-bottom: 15px; }
         .ticket-box { background: #222230; padding: 15px; border-radius: 8px; border: 1px dashed #3498db; margin-bottom: 20px; }
         .my-num { font-size: 40px; color: #00ca72; font-weight: bold; }
-        .msg-box { background: #e74c3c; color: white; padding: 10px; border-radius: 5px; font-weight: bold; margin-top: 10px; display: none; }
-    </style>
-</head>
-<body>
